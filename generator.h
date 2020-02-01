@@ -97,6 +97,7 @@ int read_text(linked_node_t *node, FILE *fp) {
 				if (token_r1->type != REGISTER) return 2;
 				SET_R1(word, token_r1->value);
 				fwrite(&word,sizeof(uint16_t),1,fp);
+				break;
 			}
 			case TK_JMP: {
 				if (get_linked_list_len(node) < 2) return 2;
