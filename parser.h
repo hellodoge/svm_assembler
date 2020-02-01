@@ -1,0 +1,180 @@
+#ifndef SVM_ASSEMBLER_PARSER_H
+#define SVM_ASSEMBLER_PARSER_H
+
+#include <stdio.h>
+#include <regex.h>
+#include <malloc.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include "linked_list.h"
+#include "mnemonics.h"
+#include "token.h"
+#include "literal.h"
+
+regex_t regex_mnemonic;
+regex_t regex_label;
+regex_t regex_segment;
+regex_t regex_empty_line;
+regex_t regex_comment_line;
+regex_t regex_word;
+regex_t regex_digit;
+regex_t regex_string;
+
+uint8_t compile_regex() {
+	uint8_t result = regcomp(&regex_mnemonic, "^[\t ]*[A-Za-z]+", REG_EXTENDED);
+	result += regcomp(&regex_label, "^[\t ]*[A-Za-z]+:", REG_EXTENDED);
+	result += regcomp(&regex_segment, "^[\t ]*\\.[A-Za-z]+", REG_EXTENDED);
+	result += regcomp(&regex_empty_line, "^[\t ]*\r?\n?$", REG_EXTENDED);
+	result += regcomp(&regex_comment_line, "^[\t ]*;", REG_EXTENDED);
+	result += regcomp(&regex_word, "\\w+", REG_EXTENDED);
+	result += regcomp(&regex_digit, "^[0-9]+$", REG_EXTENDED);
+	result += regcomp(&regex_string, "\"[^\"]+\"", REG_EXTENDED);
+	return result;
+}
+
+linked_node_t* get_words(char *line) {
+	linked_list_t *words_list = create_list(0);
+	regmatch_t match;
+	regmatch_t match_string;
+	while (!regexec(&regex_word, line, 1, &match, 0)) {
+		if (!regexec(&regex_string, line, 1, &match_string, 0))
+			if (match_string.rm_so < match.rm_so) {
+				match = match_string;
+				match.rm_so += sizeof(char);
+				match.rm_eo -= sizeof(char);
+			}
+		size_t len = match.rm_eo - match.rm_so;
+		char *copy = malloc(sizeof(char) * (len + 1));
+		*(copy + len) = '\0';
+		line += match.rm_so;
+		memcpy(copy, line, len);
+		line += len;
+		append_node(words_list, copy);
+	}
+	linked_node_t *list = words_list->first_node;
+	free(words_list);
+	return list;
+}
+
+void process_mnemonic(char* line, linked_list_t *token_list, linked_list_t *literal_list) {
+	linked_node_t *words_list = get_words(line);
+	linked_node_t *current_node = words_list;
+	do {
+		for (int i = 0; i < 16; i++) {
+			if (!strcmp(current_node->content, mnemonics[i])) {
+				append_node(token_list, get_token(DIRECTIVES, i));
+				goto processed;
+			}
+		}
+		for (int i = 0; i < 8; i++) {
+			if (!strcmp(current_node->content, registers[i])) {
+				append_node(token_list, get_token(REGISTER, i));
+				goto processed;
+			}
+		}
+		//if (!regexec(&regex_digit, current_node->content, 1, 0, 0)) {
+		if (isdigit((int)*(char*)(current_node->content))) {
+			append_node(token_list, get_token(INTEGER, atoi(current_node->content))); // NOLINT(cert-err34-c)
+			goto processed;
+		}
+		{ // SET DEFINE
+			if (!strcmp(current_node->content, "DB")) {
+				append_node(token_list, get_token(DEFINE, TK_DEF_DB));
+				goto processed;
+			} else if (!strcmp(current_node->content, "DW")) {
+				append_node(token_list, get_token(DEFINE, TK_DEF_DW));
+				goto processed;
+			} else if (!strcmp(current_node->content, "RW")) {
+				append_node(token_list, get_token(DEFINE, TK_DEF_RW));
+				goto processed;
+			}
+		}
+		{ // SET LITERAL
+			linked_node_t *current_literal_node = literal_list->first_node;
+			if (current_literal_node)
+				do {
+					literal_t *current_literal = current_literal_node->content;
+					if (!strcmp(current_literal->string, current_node->content)) {
+						append_node(token_list, set_literal_token(current_literal));
+						goto processed;
+					}
+					current_literal_node = current_literal_node->next;
+				} while (current_literal_node);
+			append_node(token_list, 0);
+			literal_t *literal = set_literal(current_node->content);
+			current_node->malloc_compatible_content = 0;
+			token_list->last_node->content = set_literal_token(literal);
+			append_node(literal_list,literal);
+		}
+		processed:
+		current_node = current_node->next;
+	} while (current_node);
+	delete_linked_nodes(words_list);
+}
+
+void process_segment(char* line, linked_list_t *token_list) {
+	linked_node_t *segment_string = get_words(line);
+	token_t *segment_token = get_token(SEGMENT, 0);
+	if (!strcmp(segment_string->content, "TEXT"))
+		segment_token->value = TK_SEG_TEXT;
+	else if (!strcmp(segment_string->content, "DATA"))
+		segment_token->value = TK_SEG_DATA;
+	else if (!strcmp(segment_string->content, "BSS"))
+		segment_token->value = TK_SEG_BSS;
+	delete_linked_nodes(segment_string);
+	append_node(token_list, segment_token);
+}
+
+void process_label(char* line, linked_list_t *token_list, linked_list_t *literal_list) {
+	linked_node_t *label_string = get_words(line);
+	append_node(token_list, 0);
+	literal_t *literal = set_literal(label_string->content);
+	token_list->last_node->content = set_literal_token(literal);
+	((token_t*)(token_list->last_node->content))->type = LABEL;
+	append_node(literal_list,literal);
+	label_string->malloc_compatible_content = 0;
+	delete_linked_nodes(label_string);
+}
+
+typedef struct read_file_output {
+	linked_list_t *list_literals;
+	linked_list_t *list_tokens;
+} read_file_output_t;
+
+read_file_output_t read_file(FILE* fp) {
+	linked_list_t *list_tokens = create_list();
+	linked_list_t *list_literals = create_list();
+	read_file_output_t output;
+	char *line = 0;
+	size_t len;
+	int i = 0;
+	while (getline(&line, &len, fp) != -1) {
+		i++;
+		if (!regexec(&regex_label, line, 0, 0, 0)) {
+			process_label(line, list_tokens, list_literals);
+		} else if (!regexec(&regex_mnemonic, line, 0, 0, 0)) {
+			process_mnemonic(line, list_tokens, list_literals);
+		} else if (!regexec(&regex_segment, line, 0, 0, 0)) {
+			process_segment(line, list_tokens);
+		} else if (!regexec(&regex_empty_line, line, 0, 0, 0)
+		        || !regexec(&regex_comment_line, line, 0, 0, 0)) {
+			continue;
+		} else {
+			printf("svm-asm: syntax error: (line %d)\n%s\n", i, line);
+			delete_linked_nodes(list_tokens->first_node);
+			output.list_tokens = 0;
+			free(list_tokens);
+			return output;
+		}
+	}
+	if (line) free(line);
+	output.list_tokens = list_tokens;
+	output.list_literals = list_literals;
+	return output;
+}
+
+
+
+#endif //SVM_ASSEMBLER_PARSER_H
