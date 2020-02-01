@@ -165,6 +165,7 @@ int read_data(linked_node_t *node, FILE *fp) {
 				} else return 2;
 			}
 			node = node->next;
+			if (!node) break;
 			tmp_token = node->content;
 		}
 	}
