@@ -154,10 +154,8 @@ int read_data(linked_node_t *node, FILE *fp) {
 			tmp_token = node->content;
 		}
 		while (tmp_token->type == LITERAL || tmp_token->type == INTEGER) {
-			if (tmp_token->type == LITERAL) {
+			if (tmp_token->type == LITERAL)
 				fprintf(fp, "%s", tmp_token->literal->string);
-				fputc(0, fp);
-			}
 			else {
 				if (token->value == TK_DEF_DB) {
 					uint8_t value = tmp_token->value;
