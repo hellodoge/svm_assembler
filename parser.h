@@ -12,6 +12,7 @@
 #include "mnemonics.h"
 #include "token.h"
 #include "literal.h"
+#include "methods.h"
 
 regex_t regex_mnemonic;
 regex_t regex_label;
@@ -91,23 +92,8 @@ void process_mnemonic(char* line, linked_list_t *token_list, linked_list_t *lite
 				goto processed;
 			}
 		}
-		{ // SET LITERAL
-			linked_node_t *current_literal_node = literal_list->first_node;
-			if (current_literal_node)
-				do {
-					literal_t *current_literal = current_literal_node->content;
-					if (!strcmp(current_literal->string, current_node->content)) {
-						append_node(token_list, set_literal_token(current_literal));
-						goto processed;
-					}
-					current_literal_node = current_literal_node->next;
-				} while (current_literal_node);
-			append_node(token_list, 0);
-			literal_t *literal = set_literal(current_node->content);
-			current_node->malloc_compatible_content = 0;
-			token_list->last_node->content = set_literal_token(literal);
-			append_node(literal_list,literal);
-		}
+		process_literal(current_node, token_list, literal_list, LITERAL);
+
 		processed:
 		current_node = current_node->next;
 	} while (current_node);
@@ -129,12 +115,7 @@ void process_segment(char* line, linked_list_t *token_list) {
 
 void process_label(char* line, linked_list_t *token_list, linked_list_t *literal_list) {
 	linked_node_t *label_string = get_words(line);
-	append_node(token_list, 0);
-	literal_t *literal = set_literal(label_string->content);
-	token_list->last_node->content = set_literal_token(literal);
-	((token_t*)(token_list->last_node->content))->type = LABEL;
-	append_node(literal_list,literal);
-	label_string->malloc_compatible_content = 0;
+	process_literal(label_string, token_list, literal_list, LABEL);
 	delete_linked_nodes(label_string);
 }
 
