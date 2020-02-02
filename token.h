@@ -55,10 +55,11 @@ token_t* get_token(token_type_t type, uint16_t value) {
 	return token;
 }
 
-token_t* set_literal_token(literal_t *literal) {
+token_t* get_literal_token(literal_t *literal) {
 	token_t *token = malloc(sizeof(token_t));
 	token->type = LITERAL;
 	token->literal = literal;
+	return token;
 }
 
 #endif //SVM_ASSEMBLER_TOKEN_H
