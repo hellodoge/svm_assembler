@@ -12,9 +12,7 @@ typedef struct literal {
 
 literal_t* set_literal(char *string) {
 	literal_t *literal = malloc(sizeof(literal_t));
-	size_t str_len = strlen(string);
-	literal->string = malloc(str_len);
-	memcpy(literal->string, string, str_len);
+	literal->string = string;
 	literal->fpos_list = create_list();
 	return literal;
 }
