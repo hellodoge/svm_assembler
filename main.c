@@ -37,22 +37,34 @@ int main(int argc, char** argv) {
 	}
 
 	read_file_output_t output = read_file(fp_source);
-	if (!output.list_tokens) return 5;
 	fclose(fp_source);
+	if (!output.list_tokens) return 5;
 
 	FILE *fp_outfile = fopen(outfile_path, "wb");
 	if (fp_outfile == 0) {
 		puts("svm-asm: error: unable to open output file");
+		delete_literal_list(output.list_literals);
+		delete_list(output.list_tokens);
 		return 6;
 	}
 
 	fseek(fp_outfile, HEADER, SEEK_SET);
 	generator_output_t result = read_text(output.list_tokens->first_node, fp_outfile);
-	if (process_generator_result(result)) return 7;
+	if (process_generator_result(result)) {
+		delete_literal_list(output.list_literals);
+		delete_list(output.list_tokens);
+		fclose(fp_outfile);
+		return 7;
+	};
 	uint16_t text_len = ftell(fp_outfile) - HEADER;
 
 	result = read_data(output.list_tokens->first_node, fp_outfile);
-	if (process_generator_result(result)) return 8;
+	if (process_generator_result(result)) {
+		delete_literal_list(output.list_literals);
+		delete_list(output.list_tokens);
+		fclose(fp_outfile);
+		return 8;
+	};
 
 	fseek(fp_outfile, 0, SEEK_SET);
 	fwrite(&text_len, sizeof(uint16_t), 1, fp_outfile);
