@@ -144,6 +144,7 @@ read_file_output_t read_file(FILE* fp) {
 			continue;
 		} else {
 			printf("svm-asm: syntax error: (line %d)\n", line_num);
+			delete_literal_list(list_literals);
 			delete_list(list_tokens);
 			output.list_tokens = 0;
 			free(line);
