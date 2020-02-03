@@ -22,11 +22,18 @@ linked_node_t* goto_segment(linked_node_t *node, uint8_t segment) {
 	return node ? node->next : 0;
 }
 
-int read_text(linked_node_t *node, FILE *fp) {
+typedef struct generator_output {
+	int return_code;
+	unsigned int line_num;
+} generator_output_t;
+
+generator_output_t read_text(linked_node_t *node, FILE *fp) {
+	generator_output_t output;
 	node = goto_segment(node, TK_SEG_TEXT);
 	while (node) {
 		uint16_t word = 0;
 		token_t *token = node->content;
+		output.line_num = token->line;
 		if (token->type == SEGMENT) {
 			node = goto_segment(node, TK_SEG_TEXT);
 			continue;
@@ -36,7 +43,9 @@ int read_text(linked_node_t *node, FILE *fp) {
 			node = node->next;
 			continue;
 		}
-		if (token->type != DIRECTIVES) return -1;
+		output.return_code = -1;
+		if (token->type != DIRECTIVES) return output;
+		output.return_code = -2;
 		SET_OP(word, token->value);
 		switch (token->value) {
 			case TK_ADD:
@@ -48,12 +57,12 @@ int read_text(linked_node_t *node, FILE *fp) {
 			case TK_OR:
 			case TK_CMP:
 			case TK_NOT: {
-				if (get_linked_list_len(node) < 3) return -2;
+				if (get_linked_list_len(node) < 3) return output;
 				node = node->next;
 				token_t *token_r1 = node->content;
 				node = node->next;
 				token_t *term = node->content;
-				if (token_r1->type != REGISTER) return -2;
+				if (token_r1->type != REGISTER) return output;
 				SET_R1(word, token_r1->value);
 				if (term->type == INTEGER) {
 					SET_TERM(word, term->value);
@@ -67,10 +76,10 @@ int read_text(linked_node_t *node, FILE *fp) {
 			case TK_LDR:
 			case TK_STR:
 			case TK_MOV: {
-				if (get_linked_list_len(node) < 3) return -2;
+				if (get_linked_list_len(node) < 3) return output;
 				node = node->next;
 				token_t *token_r1 = node->content;
-				if (token_r1->type != REGISTER) return -2;
+				if (token_r1->type != REGISTER) return output;
 				SET_R1(word, token_r1->value);
 				node = node->next;
 				token_t *term = node->content;
@@ -86,21 +95,21 @@ int read_text(linked_node_t *node, FILE *fp) {
 				} else if (term->type == INTEGER) {
 					fwrite(&word,sizeof(uint16_t),1,fp);
 					fwrite(&term->value,sizeof(uint16_t),1,fp);
-				} else return -2;
+				} else return output;
 				break;
 			}
 			case TK_PUSH:
 			case TK_POP: {
-				if (get_linked_list_len(node) < 2) return -2;
+				if (get_linked_list_len(node) < 2) return output;
 				node = node->next;
 				token_t *token_r1 = node->content;
-				if (token_r1->type != REGISTER) return -2;
+				if (token_r1->type != REGISTER) return output;
 				SET_R1(word, token_r1->value);
 				fwrite(&word,sizeof(uint16_t),1,fp);
 				break;
 			}
 			case TK_JMP: {
-				if (get_linked_list_len(node) < 2) return -2;
+				if (get_linked_list_len(node) < 2) return output;
 				node = node->next;
 				token_t *token_term = node->content;
 				token_t *token_unconditional = node->next->content;
@@ -124,7 +133,7 @@ int read_text(linked_node_t *node, FILE *fp) {
 				if (token_term->type == INTEGER) {
 					fwrite(&token_term->value,sizeof(uint16_t),1,fp);
 				} else if (token_term->type != LITERAL && token_term->type != REGISTER)
-					return -2;
+					return output;
 				break;
 			}
 			default:
@@ -133,10 +142,12 @@ int read_text(linked_node_t *node, FILE *fp) {
 		}
 		node = node->next;
 	}
-	return 0;
+	output.return_code = 0;
+	return output;
 }
 
-int read_data(linked_node_t *node, FILE *fp) {
+generator_output_t read_data(linked_node_t *node, FILE *fp) {
+	generator_output_t output;
 	node = goto_segment(node, TK_SEG_DATA);
 	while (node) {
 		token_t *token = node->content;
@@ -144,7 +155,9 @@ int read_data(linked_node_t *node, FILE *fp) {
 			node = goto_segment(node, TK_SEG_DATA);
 			continue;
 		}
-		if (token->type != DEFINE) return -1;
+		output.return_code = -1;
+		if (token->type != DEFINE) return output;
+		output.return_code = -2;
 		node = node->next;
 		token_t *tmp_token = node->content;
 		if (tmp_token->type == LITERAL) {
@@ -163,14 +176,15 @@ int read_data(linked_node_t *node, FILE *fp) {
 				} else if (token->value == TK_DEF_DW) {
 					uint16_t value = tmp_token->value;
 					fwrite(&value, sizeof(uint16_t), 1, fp);
-				} else return -2;
+				} else return output;
 			}
 			node = node->next;
 			if (!node) break;
 			tmp_token = node->content;
 		}
 	}
-	return 0;
+	output.return_code = 0;
+	return output;
 }
 
 

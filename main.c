@@ -3,7 +3,7 @@
 #include "parser.h"
 #include "generator.h"
 
-int process_generator_result(int result);
+int process_generator_result(generator_output_t result);
 
 int main(int argc, char** argv) {
 
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 	}
 
 	fseek(fp_outfile, HEADER, SEEK_SET);
-	int result = read_text(output.list_tokens->first_node, fp_outfile);
+	generator_output_t result = read_text(output.list_tokens->first_node, fp_outfile);
 	if (process_generator_result(result)) return 7;
 	uint16_t text_len = ftell(fp_outfile) - HEADER;
 
@@ -67,17 +67,24 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-int process_generator_result(int result) {
-	switch (result) {
+int process_generator_result(generator_output_t result) {
+	int output;
+	char *error_message;
+	switch (result.return_code) {
 		case 0: return 0;
 		case -1:
-			puts("svm-asm: error: generator: instruction expected");
-			return 1;
+			error_message = "instruction expected";
+			output = 1;
+			break;
 		case -2:
-			puts("svm-asm: error: generator: invalid combination of opcode and operands");
-			return 2;
+			error_message = "invalid combination of opcode and operands";
+			output = 2;
+			break;
 		default:
-			puts("svm-asm: error: generator: unknown error");
-			return 3;
+			error_message = "unknown error";
+			output = 3;
+			break;
 	}
+	printf("svm-asm: error: generator: (line %d) %s\n", result.line_num, error_message);
+	return output;
 }
