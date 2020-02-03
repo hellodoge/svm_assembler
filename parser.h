@@ -143,7 +143,7 @@ read_file_output_t read_file(FILE* fp) {
 		        || !regexec(&regex_comment_line, line, 0, 0, 0)) {
 			continue;
 		} else {
-			printf("svm-asm: syntax error: (line %d)\n%s\n", line_num, line);
+			printf("svm-asm: syntax error: (line %d)\n", line_num);
 			delete_list(list_tokens);
 			output.list_tokens = 0;
 			free(line);
