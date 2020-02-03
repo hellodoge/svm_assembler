@@ -70,10 +70,10 @@ int main(int argc, char** argv) {
 int process_generator_result(int result) {
 	switch (result) {
 		case 0: return 0;
-		case 1:
+		case -1:
 			puts("svm-asm: error: generator: instruction expected");
 			return 1;
-		case 2:
+		case -2:
 			puts("svm-asm: error: generator: invalid combination of opcode and operands");
 			return 2;
 		default:
