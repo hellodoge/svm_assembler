@@ -59,40 +59,40 @@ linked_node_t* get_words(char *line) {
 	return list;
 }
 
-void process_mnemonic(char* line, linked_list_t *token_list, linked_list_t *literal_list) {
+void process_mnemonic(char* line, linked_list_t *token_list, linked_list_t *literal_list, unsigned line_num) {
 	linked_node_t *words_list = get_words(line);
 	linked_node_t *current_node = words_list;
 	do {
 		for (int i = 0; i < 16; i++) {
 			if (!strcmp(current_node->content, mnemonics[i])) {
-				append_node(token_list, get_token(DIRECTIVES, i));
+				append_node(token_list, get_token(DIRECTIVES, i, line_num));
 				goto processed;
 			}
 		}
 		for (int i = 0; i < 8; i++) {
 			if (!strcmp(current_node->content, registers[i])) {
-				append_node(token_list, get_token(REGISTER, i));
+				append_node(token_list, get_token(REGISTER, i, line_num));
 				goto processed;
 			}
 		}
 		//if (!regexec(&regex_digit, current_node->content, 1, 0, 0)) {
 		if (isdigit((int)*(char*)(current_node->content))) {
-			append_node(token_list, get_token(INTEGER, atoi(current_node->content))); // NOLINT(cert-err34-c)
+			append_node(token_list, get_token(INTEGER, atoi(current_node->content), line_num)); // NOLINT(cert-err34-c)
 			goto processed;
 		}
 		{ // SET DEFINE
 			if (!strcmp(current_node->content, "DB")) {
-				append_node(token_list, get_token(DEFINE, TK_DEF_DB));
+				append_node(token_list, get_token(DEFINE, TK_DEF_DB, line_num));
 				goto processed;
 			} else if (!strcmp(current_node->content, "DW")) {
-				append_node(token_list, get_token(DEFINE, TK_DEF_DW));
+				append_node(token_list, get_token(DEFINE, TK_DEF_DW, line_num));
 				goto processed;
 			} else if (!strcmp(current_node->content, "RW")) {
-				append_node(token_list, get_token(DEFINE, TK_DEF_RW));
+				append_node(token_list, get_token(DEFINE, TK_DEF_RW, line_num));
 				goto processed;
 			}
 		}
-		process_literal(current_node, token_list, literal_list, LITERAL);
+		process_literal(current_node, token_list, literal_list, LITERAL, line_num);
 
 		processed:
 		current_node = current_node->next;
@@ -100,9 +100,9 @@ void process_mnemonic(char* line, linked_list_t *token_list, linked_list_t *lite
 	delete_linked_nodes(words_list);
 }
 
-void process_segment(char* line, linked_list_t *token_list) {
+void process_segment(char* line, linked_list_t *token_list, unsigned line_num) {
 	linked_node_t *segment_string = get_words(line);
-	token_t *segment_token = get_token(SEGMENT, 0);
+	token_t *segment_token = get_token(SEGMENT, 0, line_num);
 	if (!strcmp(segment_string->content, "TEXT"))
 		segment_token->value = TK_SEG_TEXT;
 	else if (!strcmp(segment_string->content, "DATA"))
@@ -113,9 +113,9 @@ void process_segment(char* line, linked_list_t *token_list) {
 	append_node(token_list, segment_token);
 }
 
-void process_label(char* line, linked_list_t *token_list, linked_list_t *literal_list) {
+void process_label(char* line, linked_list_t *token_list, linked_list_t *literal_list, unsigned line_num) {
 	linked_node_t *label_string = get_words(line);
-	process_literal(label_string, token_list, literal_list, LABEL);
+	process_literal(label_string, token_list, literal_list, LABEL, line_num);
 	delete_linked_nodes(label_string);
 }
 
@@ -130,20 +130,20 @@ read_file_output_t read_file(FILE* fp) {
 	read_file_output_t output;
 	char *line = 0;
 	size_t len;
-	int i = 0;
+	unsigned int line_num = 0;
 	while (getline(&line, &len, fp) != -1) {
-		i++;
+		line_num++;
 		if (!regexec(&regex_label, line, 0, 0, 0)) {
-			process_label(line, list_tokens, list_literals);
+			process_label(line, list_tokens, list_literals, line_num);
 		} else if (!regexec(&regex_mnemonic, line, 0, 0, 0)) {
-			process_mnemonic(line, list_tokens, list_literals);
+			process_mnemonic(line, list_tokens, list_literals, line_num);
 		} else if (!regexec(&regex_segment, line, 0, 0, 0)) {
-			process_segment(line, list_tokens);
+			process_segment(line, list_tokens, line_num);
 		} else if (!regexec(&regex_empty_line, line, 0, 0, 0)
 		        || !regexec(&regex_comment_line, line, 0, 0, 0)) {
 			continue;
 		} else {
-			printf("svm-asm: syntax error: (line %d)\n%s\n", i, line);
+			printf("svm-asm: syntax error: (line %d)\n%s\n", line_num, line);
 			delete_linked_nodes(list_tokens->first_node);
 			output.list_tokens = 0;
 			free(list_tokens);
