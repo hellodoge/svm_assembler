@@ -112,13 +112,11 @@ generator_output_t read_text(linked_node_t *node, FILE *fp) {
 				if (get_linked_list_len(node) < 2) return output;
 				node = node->next;
 				token_t *token_term = node->content;
-				token_t *token_unconditional = node->next->content;
-				uint8_t unconditional = 0;
-				if (token_unconditional->type == INTEGER) {
+				token_t *token_conditional = node->next->content;
+				if (token_conditional->type == INTEGER) {
 					node = node->next;
-					unconditional = token_unconditional->value;
-				}
-				if (unconditional) SET_TERM(word, 1u);
+					SET_TERM(word, token_conditional->value);
+				} else SET_TERM(word, UINT8_MAX);
 				if (token_term->type == REGISTER) {
 					SET_MODE(word);
 					SET_R1(word, token_term->value);
