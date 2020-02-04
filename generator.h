@@ -55,8 +55,7 @@ generator_output_t read_text(linked_node_t *node, FILE *fp) {
 			case TK_MOD:
 			case TK_AND:
 			case TK_OR:
-			case TK_CMP:
-			case TK_NOT: {
+			case TK_CMP: {
 				if (get_linked_list_len(node) < 3) return output;
 				node = node->next;
 				token_t *token_r1 = node->content;
@@ -70,6 +69,24 @@ generator_output_t read_text(linked_node_t *node, FILE *fp) {
 				} else if (term->type == REGISTER) {
 					SET_R2(word, term->value);
 				}
+				fwrite(&word,sizeof(uint16_t),1,fp);
+				break;
+			}
+			case TK_NOT: {
+				if (get_linked_list_len(node) < 2) return output;
+				node = node->next;
+				token_t *token_r1 = node->content;
+				linked_node_t *node_r2 = node->next;
+				if (node_r2) {
+					token_t *token_r2 = node_r2->content;
+					if (token_r2->type == REGISTER) {
+						node = node->next;
+						SET_MODE(word),
+						SET_R2(word, token_r2->value);
+					}
+				}
+				if (token_r1->type != REGISTER) return output;
+				SET_R1(word, token_r1->value);
 				fwrite(&word,sizeof(uint16_t),1,fp);
 				break;
 			}
