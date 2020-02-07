@@ -24,9 +24,9 @@ regex_t regex_digit;
 regex_t regex_string;
 
 uint8_t compile_regex() {
-	uint8_t result = regcomp(&regex_mnemonic, "^[\t ]*[A-Za-z]+", REG_EXTENDED);
-	result += regcomp(&regex_label, "^[\t ]*[A-Za-z]+:", REG_EXTENDED);
-	result += regcomp(&regex_segment, "^[\t ]*\\.[A-Za-z]+", REG_EXTENDED);
+	uint8_t result = regcomp(&regex_mnemonic, "^[\t ]*\\w+", REG_EXTENDED);
+	result += regcomp(&regex_label, "^[\t ]*\\w+:", REG_EXTENDED);
+	result += regcomp(&regex_segment, "^[\t ]*\\.\\w+", REG_EXTENDED);
 	result += regcomp(&regex_empty_line, "^[\t ]*\r?\n?$", REG_EXTENDED);
 	result += regcomp(&regex_comment_line, "^[\t ]*;", REG_EXTENDED);
 	result += regcomp(&regex_word, "\\w+", REG_EXTENDED);
