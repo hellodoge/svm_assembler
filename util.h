@@ -12,6 +12,7 @@ void process_literal(linked_node_t *current_node, linked_list_t *token_list,
 			literal_t *current_literal = current_literal_node->content;
 			if (!strcmp(current_literal->string, current_node->content)) {
 				append_node(token_list, get_literal_token(current_literal, line_num));
+				((token_t*)token_list->last_node->content)->type = type;
 				return;
 			}
 			current_literal_node = current_literal_node->next;
