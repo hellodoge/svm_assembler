@@ -1,5 +1,5 @@
-#ifndef SVM_ASSEMBLER_METHODS_H
-#define SVM_ASSEMBLER_METHODS_H
+#ifndef SVM_ASSEMBLER_UTIL_H
+#define SVM_ASSEMBLER_UTIL_H
 
 #include "linked_list.h"
 #include "literal.h"
@@ -24,4 +24,4 @@ void process_literal(linked_node_t *current_node, linked_list_t *token_list,
 	append_node(literal_list,literal);
 }
 
-#endif //SVM_ASSEMBLER_METHODS_H
+#endif //SVM_ASSEMBLER_UTIL_H

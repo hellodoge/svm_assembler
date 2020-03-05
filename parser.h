@@ -12,7 +12,7 @@
 #include "mnemonics.h"
 #include "token.h"
 #include "literal.h"
-#include "methods.h"
+#include "util.h"
 
 regex_t regex_mnemonic;
 regex_t regex_label;
