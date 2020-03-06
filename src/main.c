@@ -1,7 +1,9 @@
 #include <stdio.h>
-
+#include <string.h>
 #include "parser.h"
 #include "generator.h"
+#include "linked_list.h"
+#include "literal.h"
 
 int process_generator_result(generator_output_t result);
 
@@ -55,7 +57,7 @@ int main(int argc, char** argv) {
 		delete_list(output.list_tokens);
 		fclose(fp_outfile);
 		return 7;
-	};
+	}
 	uint16_t text_len = ftell(fp_outfile) - HEADER;
 
 	result = read_data(output.list_tokens->first_node, fp_outfile);
@@ -64,7 +66,7 @@ int main(int argc, char** argv) {
 		delete_list(output.list_tokens);
 		fclose(fp_outfile);
 		return 8;
-	};
+	}
 
 	fseek(fp_outfile, 0, SEEK_SET);
 	fwrite(&text_len, sizeof(uint16_t), 1, fp_outfile);

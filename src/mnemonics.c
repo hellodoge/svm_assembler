@@ -1,8 +1,3 @@
-#ifndef SVM_ASSEMBLER_MNEMONICS_H
-#define SVM_ASSEMBLER_MNEMONICS_H
-
-#include <stdint.h>
-
 char *mnemonics[16] = {
 		"ADD",
 		"SUB",
@@ -32,5 +27,3 @@ char *registers[8] = {
 		"HP",
 		"FLAGS",
 };
-
-#endif //SVM_ASSEMBLER_MNEMONICS_H

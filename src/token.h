@@ -1,7 +1,6 @@
 #ifndef SVM_ASSEMBLER_TOKEN_H
 #define SVM_ASSEMBLER_TOKEN_H
 
-#include <stdint.h>
 #include "literal.h"
 
 typedef enum types {
@@ -45,24 +44,11 @@ typedef struct token {
 	unsigned int line;
 	union {
 		uint16_t value;
-		literal_t* literal;
+		literal_t *literal;
 	};
 } token_t;
 
-token_t* get_token(token_type_t type, uint16_t value, unsigned line) {
-	token_t *token = malloc(sizeof(token_t));
-	token->type = type;
-	token->value = value;
-	token->line = line;
-	return token;
-}
-
-token_t* get_literal_token(literal_t *literal, unsigned line) {
-	token_t *token = malloc(sizeof(token_t));
-	token->type = LITERAL;
-	token->literal = literal;
-	token->line = line;
-	return token;
-}
+token_t* get_token(token_type_t type, uint16_t value, unsigned line);
+token_t* get_literal_token(literal_t *literal, unsigned line);
 
 #endif //SVM_ASSEMBLER_TOKEN_H
