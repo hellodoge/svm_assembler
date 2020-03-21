@@ -188,3 +188,34 @@ generator_output_t read_data(linked_node_t *node, FILE *fp) {
 	output.return_code = 0;
 	return output;
 }
+
+generator_output_t read_bss(linked_node_t *node, unsigned ftell_out) {
+	generator_output_t output;
+	output.bss_size = 0;
+	node = goto_segment(node, TK_SEG_BSS);
+	while (node) {
+		token_t *token = node->content;
+		output.line_num = token->line;
+		if (token->type == SEGMENT) {
+			node = goto_segment(node, TK_SEG_BSS);
+			continue;
+		}
+		output.return_code = -1;
+		if (token->type != DEFINE) return output;
+		output.return_code = -2;
+		node = node->next;
+		token_t *tmp_token = node->content;
+		if (tmp_token->type == LITERAL) {
+			literal_t *literal = tmp_token->literal;
+			literal->value = ftell_out + output.bss_size - HEADER;
+			node = node->next;
+			tmp_token = node->content;
+		}
+		if (tmp_token->type != INTEGER || token->value != TK_DEF_RW)
+			return output;
+		output.bss_size += tmp_token->value * 2;
+		node = node->next;
+	}
+	output.return_code = 0;
+	return output;
+}

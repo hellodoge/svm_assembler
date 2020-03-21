@@ -1,7 +1,7 @@
 #ifndef SVM_ASSEMBLER_GENERATOR_H
 #define SVM_ASSEMBLER_GENERATOR_H
 
-#define HEADER sizeof(uint16_t)
+#define HEADER sizeof(uint16_t) * 3
 
 #define SET(word,data,pos,len) (word = word | (data << (16u - pos - len)))
 #define SET_OP(word, operator) (SET(word, operator, 0u, 4u))
@@ -19,10 +19,11 @@ linked_node_t* goto_segment(linked_node_t *node, uint8_t segment);
 typedef struct generator_output {
 	int return_code;
 	unsigned int line_num;
+	uint16_t bss_size;
 } generator_output_t;
 
 generator_output_t read_text(linked_node_t *node, FILE *fp);
 generator_output_t read_data(linked_node_t *node, FILE *fp);
-
+generator_output_t read_bss(linked_node_t *node, unsigned ftell_out);
 
 #endif //SVM_ASSEMBLER_GENERATOR_H

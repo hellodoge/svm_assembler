@@ -67,9 +67,21 @@ int main(int argc, char** argv) {
 		fclose(fp_outfile);
 		return 8;
 	}
+	uint16_t data_len = ftell(fp_outfile) - HEADER;
+
+	result = read_bss(output.list_tokens->first_node, ftell(fp_outfile));
+	if (process_generator_result(result)) {
+		delete_literal_list(output.list_literals);
+		delete_list(output.list_tokens);
+		fclose(fp_outfile);
+		return 9;
+	}
+	result.bss_size += data_len;
 
 	fseek(fp_outfile, 0, SEEK_SET);
 	fwrite(&text_len, sizeof(uint16_t), 1, fp_outfile);
+	fwrite(&data_len, sizeof(uint16_t), 1, fp_outfile);
+	fwrite(&result.bss_size, sizeof(uint16_t), 1, fp_outfile);
 
 	insert_literals_values(output.list_literals->first_node, fp_outfile);
 
