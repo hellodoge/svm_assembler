@@ -153,6 +153,7 @@ generator_output_t read_data(linked_node_t *node, FILE *fp) {
 	node = goto_segment(node, TK_SEG_DATA);
 	while (node) {
 		token_t *token = node->content;
+		output.line_num = token->line;
 		if (token->type == SEGMENT) {
 			node = goto_segment(node, TK_SEG_DATA);
 			continue;
