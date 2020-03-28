@@ -39,7 +39,6 @@ generator_output_t read_text(linked_node_t *node, FILE *fp) {
 			case TK_SUB:
 			case TK_MUL:
 			case TK_DIV:
-			case TK_MOD:
 			case TK_AND:
 			case TK_OR:
 			case TK_CMP: {
@@ -79,6 +78,7 @@ generator_output_t read_text(linked_node_t *node, FILE *fp) {
 			}
 			case TK_LDR:
 			case TK_STR:
+			case TK_STB:
 			case TK_MOV: {
 				if (get_linked_list_len(node) < 3) return output;
 				node = node->next;
